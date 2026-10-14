@@ -66,6 +66,19 @@ a{color:inherit}
 .hint{position:absolute;z-index:2;right:20px;bottom:calc(28px + env(safe-area-inset-bottom));color:#f5f0e4;font-size:11px;letter-spacing:.28em;text-transform:uppercase;
   writing-mode:vertical-rl;text-shadow:0 1px 10px #1e2a20}
 @media (max-width:600px){.hint{writing-mode:horizontal-tb;right:auto;left:20px}}
+/* film: moving grain, warm light leaks, camera date stamp */
+.film{position:absolute;inset:-60px;z-index:1;pointer-events:none;opacity:.22;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain .9s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}17%{transform:translate(-22px,14px)}33%{transform:translate(18px,-26px)}50%{transform:translate(-30px,-8px)}67%{transform:translate(10px,30px)}83%{transform:translate(26px,6px)}}
+.leak{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:.55;
+  background:radial-gradient(40% 55% at 100% 8%,#ff9d5c66,#0000 70%),radial-gradient(30% 45% at -4% 92%,#ff7a8a40,#0000 70%);
+  animation:leak 9s ease-in-out infinite alternate}
+@keyframes leak{to{opacity:.85;transform:translateX(-2%)}}
+.stamp{position:absolute;z-index:2;right:22px;bottom:calc(24px + env(safe-area-inset-bottom));font:700 17px/1 ui-monospace,"Courier New",monospace;letter-spacing:.14em;
+  color:#ff9a3c;text-shadow:0 0 4px #ff7a1f,0 0 12px #ff7a1f88;opacity:.88;filter:blur(.3px)}
+@media (min-width:601px){.hint{right:auto;left:20px;writing-mode:horizontal-tb}}
+@media (prefers-reduced-motion:reduce){.film,.leak{animation:none}}
 
 /* ============ content ============ */
 section{scroll-margin-top:52px}
@@ -126,6 +139,9 @@ document.documentElement.classList.add("js");
         <button class="go" id="go" type="button"><span>Start walking</span><b aria-hidden="true">↓</b></button>
       </div>
       <div class="hint" id="hint" aria-hidden="true">Scroll to walk</div>
+      <div class="leak" aria-hidden="true"></div>
+      <div class="film" aria-hidden="true"></div>
+      <div class="stamp" id="stamp" aria-hidden="true"></div>
 
       <div class="cap" id="cap1" aria-hidden="true">The lane drops below the fields here.</div>
       <div class="cap" id="cap2" aria-hidden="true">Keep going. There's light ahead.</div>
@@ -215,19 +231,19 @@ document.documentElement.classList.add("js");
     const s = slices[Math.min(DEPTH - 1, Math.max(0, Math.floor(z)))];
     if (key == null) s[kind].push(item); else (s[kind][key] ||= []).push(item);
   };
-  const GRASS = [[86, 112, 44], [104, 132, 52], [128, 150, 60], [72, 96, 40], [150, 160, 70], [176, 168, 84]];
-  const LEAF = [[30, 46, 28], [40, 60, 34], [56, 80, 40], [82, 104, 48], [138, 146, 64]];
-  const HAZE = [214, 206, 168];
+  const GRASS = [[70, 120, 72], [96, 148, 66], [132, 176, 74], [58, 100, 66], [168, 196, 92], [196, 204, 118]];
+  const LEAF = [[34, 62, 44], [46, 80, 48], [66, 104, 54], [98, 134, 62], [150, 170, 84]];
+  const HAZE = [206, 220, 214];
   const inTunnel = z => z > ARCH_START - 1.8 && z < ARCH_END + 1.8;
 
-  for (let i = 0; i < 2600; i++) {
+  for (let i = 0, n = innerWidth < 700 ? 4200 : 6800; i < n; i++) {
     const z = R(.5, 58), x = R(-15, 15);
     if (Math.abs(x) < .85 + rnd() * .3) continue;              // the path
     if (inTunnel(z) && Math.abs(x) < 2.6) continue;           // under the trees
     const h = inTunnel(z) ? R(.15, .35) : R(.35, .85) * (z < 6 ? 1.2 : 1);
     const b = { x, z, h, l: R(-.18, .18), w: R(.018, .03), ph: R(0, 6.28) };
     put(z, "blades", inTunnel(z) ? 3 : Math.floor(rnd() * GRASS.length), b);
-    if (z < 34 && !inTunnel(z) && rnd() < .09) put(z, "flowers", null, { b, c: ["#f6f1e4", "#f2c84b", "#bda6dc", "#f6f1e4"][Math.floor(rnd() * 4)] });
+    if (z < 34 && !inTunnel(z) && rnd() < .07) put(z, "flowers", null, { b, c: ["#fbf8ef", "#fbf8ef", "#f6d55a", "#c7b3ea", "#fbf8ef"][Math.floor(rnd() * 5)] });
   }
   for (let k = 0; k < ARCHES; k++) {
     const az = ARCH_START + k * ARCH_GAP;
@@ -247,9 +263,9 @@ document.documentElement.classList.add("js");
   for (let x = -70; x < 70; x += R(1.2, 2.4)) {
     if (Math.abs(x) < 4.5) continue;
     const z = R(55, 60);
-    for (let j = 0; j < 4; j++) put(z, "leaves", Math.floor(rnd() * 4), { x: x + R(-1, 1), y: R(3, 8), z, r: R(1.2, 2.4) });
+    for (let j = 0; j < 4; j++) put(z, "leaves", Math.floor(rnd() * 4), { x: x + R(-1, 1), y: R(2.4, 6.5), z, r: R(1.3, 2.5) });
   }
-  put(57, "bands", null, { x0: -90, x1: -4.5, y: 4, z: 57 }); put(57, "bands", null, { x0: 4.5, x1: 90, y: 4, z: 57 });
+  put(57, "bands", null, { x0: -90, x1: -4.5, y: 2.6, z: 57 }); put(57, "bands", null, { x0: 4.5, x1: 90, y: 2.6, z: 57 });
 
   // tall seed stalks close to the path, they catch the light
   for (let i = 0; i < 70; i++) {
@@ -257,8 +273,8 @@ document.documentElement.classList.add("js");
     if (inTunnel(z)) continue;
     put(z, "stalks", null, { x, z, h: R(.8, 1.25), l: R(-.12, .12), ph: R(0, 6.28) });
   }
-  const clouds = Array.from({ length: 7 }, () => ({ x: R(-.2, 1.2), y: R(.06, .34), w: R(.14, .3), v: R(.004, .01),
-    puffs: Array.from({ length: 5 }, () => [R(-.5, .5), R(-.2, .15), R(.25, .5)]) }));
+  const clouds = Array.from({ length: 6 }, (_, i) => ({ x: i / 6 + R(-.05, .05), y: R(.12, .3), w: R(.16, .3), v: R(.003, .007),
+    puffs: Array.from({ length: 11 }, () => { const u = R(-.5, .5); return [u, -Math.abs(R(0, .32)) * (1 - Math.abs(u)), R(.1, .22)]; }) }));
   const rays = Array.from({ length: 26 }, () => ({ a: -Math.PI / 2 + R(-1.5, 1.5), w: R(.01, .06), len: R(.3, .6), o: R(.02, .045), ph: R(0, 6.28) }));
   const birds = Array.from({ length: 5 }, (_, i) => ({ x: R(0, 1), y: R(.12, .3), v: R(.012, .022), f: R(5, 7), s: R(5, 9), ph: i }));
 
@@ -296,14 +312,13 @@ document.documentElement.classList.add("js");
 
   function sky(t) {
     const s = g.createLinearGradient(0, 0, 0, HY);
-    s.addColorStop(0, "#a9c6d3"); s.addColorStop(.55, "#ecdcbc"); s.addColorStop(1, "#f6d29a");
+    s.addColorStop(0, "#6fa8d6"); s.addColorStop(.42, "#a9cde3"); s.addColorStop(.8, "#ecebd8"); s.addColorStop(1, "#f7dfb4");
     g.fillStyle = s; g.fillRect(0, 0, W, HY + 2);
-    const [sunX, sunY] = sunPos(), sr = H * .55;
+    const [sunX, sunY] = sunPos(), sr = H * .55, k = 1 + camZ / 140;
     const glow = g.createRadialGradient(sunX, sunY, 0, sunX, sunY, sr);
     glow.addColorStop(0, "#fff6dc"); glow.addColorStop(.12, "#ffe9b4cc"); glow.addColorStop(1, "#ffe9b400");
     g.fillStyle = glow; g.fillRect(0, 0, W, H);
     // the low sun itself, half hidden by the far ridge
-    const k = 1 + camZ / 140;
     g.fillStyle = "#fff5dc"; g.beginPath(); g.arc(sunX, sunY, H * .042, 0, 6.2832); g.fill();
     g.save(); g.globalCompositeOperation = "lighter";              // soft beams fanning out behind the trees
     for (const r of rays) {
@@ -314,14 +329,19 @@ document.documentElement.classList.add("js");
       g.lineTo(sunX + Math.cos(a - w) * L, sunY + Math.sin(a - w) * L); g.lineTo(sunX + Math.cos(a + w) * L, sunY + Math.sin(a + w) * L); g.fill();
     }
     g.restore();
-    // slow clouds, lit from below
+    // big soft summer clouds: blue shade underneath, white body, warm edge toward the sun
     for (const c of clouds) {
-      const x = ((c.x + (reduce ? 0 : t * c.v)) % 1.4 - .2) * W, y = c.y * H, w = c.w * W;
-      for (const [px, py, pr] of c.puffs) {
-        const cg = g.createRadialGradient(x + px * w, y + py * w * .5, 0, x + px * w, y + py * w * .5, pr * w);
-        cg.addColorStop(0, "rgba(255,246,228,.42)"); cg.addColorStop(.6, "rgba(255,226,196,.16)"); cg.addColorStop(1, "rgba(255,226,196,0)");
-        g.fillStyle = cg; g.beginPath(); g.ellipse(x + px * w, y + py * w * .5, pr * w, pr * w * .38, 0, 0, 6.2832); g.fill();
-      }
+      const x = ((c.x + (reduce ? 0 : t * c.v)) % 1.3 - .15) * W, y = c.y * H * k - camZ * .4, w = c.w * Math.max(W, H * 1.2);
+      const pass = (col, ox, oy, sr) => {
+        g.fillStyle = col; g.beginPath();
+        for (const [px, py, pr] of c.puffs) { const X = x + px * w + ox * pr * w, Y = y + py * w + oy * pr * w, r = pr * w * sr; g.moveTo(X + r, Y); g.arc(X, Y, r, 0, 6.2832); }
+        g.fill();
+      };
+      g.globalAlpha = .9;
+      pass("#d9e3ec", 0, .12, 1); pass("#f6f7f5", 0, 0, .97);
+      const dx = sunX > x ? .25 : -.25;
+      pass("rgba(255,240,218,.55)", dx * .6, -.1, .8);
+      g.globalAlpha = 1;
     }
     // distant hills drift a little as you walk
     const hills = (pts, base, col) => {
@@ -329,7 +349,7 @@ document.documentElement.classList.add("js");
       pts.forEach(([u, a]) => g.lineTo(CX + (u * W - CX) * k - camX * 4, HY - (base + a) * H * k));
       g.lineTo(W + 10, H); g.fillStyle = col; g.fill();
     };
-    hills(hillsMid, .085, "#cdc7ad"); hills(hillsFar, .06, "#b4b99c"); hills(hillsNear, .03, "#93a278");
+    hills(hillsMid, .085, "#c4d3d4"); hills(hillsFar, .06, "#a3b9ab"); hills(hillsNear, .03, "#86a77a");
     // a few birds heading home
     g.strokeStyle = "rgba(52,50,40,.65)"; g.lineCap = "round"; g.lineWidth = 1.4;
     if (W >= 700) for (const b of birds) {                       // they stay on the right, clear of the headline
@@ -342,10 +362,30 @@ document.documentElement.classList.add("js");
     g.globalAlpha = 1;
   }
 
+  // a tile of tiny painted strokes, laid over the ground in bands that get finer toward the horizon
+  const tile = document.createElement("canvas"); tile.width = tile.height = 256;
+  (() => {
+    const c = tile.getContext("2d");
+    for (let i = 0; i < 2600; i++) {
+      const x = R(0, 256), y = R(0, 256), h = R(4, 12), col = GRASS[Math.floor(rnd() * GRASS.length)];
+      c.strokeStyle = `rgba(${col[0] + R(-20, 30) | 0},${col[1] + R(-20, 30) | 0},${col[2]},${R(.25, .6)})`; c.lineWidth = R(.8, 1.8);
+      c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + R(-1, 1), y - h * .6, x + R(-3, 3), y - h); c.stroke();
+    }
+  })();
+  const grassTex = g.createPattern(tile, "repeat");
+
   function ground() {
     const gr = g.createLinearGradient(0, HY - 4, 0, H);
-    gr.addColorStop(0, "#a7ad6a"); gr.addColorStop(.35, "#7f983f"); gr.addColorStop(1, "#4f6e2a");
+    gr.addColorStop(0, "#b5c98c"); gr.addColorStop(.3, "#88b05a"); gr.addColorStop(1, "#4c7f3e");
     g.fillStyle = gr; g.fillRect(0, HY - H * .02, W, H);
+    // texture bands: small near the horizon, bigger toward you, sliding as you walk
+    const bands = [[0, .06, .22], [.06, .16, .38], [.16, .34, .62], [.34, 1, 1]];
+    for (const [a, b, sc] of bands) {
+      const y0 = HY + (H - HY) * a, y1 = HY + (H - HY) * b;
+      grassTex.setTransform(new DOMMatrix().translate(-camX * 40, (camZ * 60 * sc) % (256 * sc)).scale(sc * Math.max(1, W / 1400)));
+      g.globalAlpha = .55 + sc * .3; g.fillStyle = grassTex; g.fillRect(0, y0, W, y1 - y0 + 1);
+    }
+    g.globalAlpha = 1;
     // the lane: packed earth, darker under the trees
     const P = (x, z) => { const d = Math.max(.3, z - camZ), s = F / d; return [CX + (x - camX) * s, HY + camY * s]; };
     const lane = (x0, x1, z0, z1, col) => {
@@ -373,7 +413,7 @@ document.documentElement.classList.add("js");
       // back woods band
       for (const b of s.bands) {
         const d = b.z - camZ, sc = F / d;
-        g.fillStyle = mix([46, 66, 38], HAZE, hz);
+        g.fillStyle = mix([58, 98, 62], HAZE, hz * .55);
         g.fillRect(CX + (b.x0 - camX) * sc, HY + (camY - b.y) * sc, (b.x1 - b.x0) * sc, b.y * sc + 2);
       }
       // trunks
@@ -471,7 +511,7 @@ document.documentElement.classList.add("js");
     const [sx0, sy0] = sunPos();
     g.save(); g.globalCompositeOperation = "soft-light";
     const warm = g.createRadialGradient(sx0, sy0, 0, sx0, sy0, Math.max(W, H));
-    warm.addColorStop(0, `rgba(255,190,110,${.5 * out})`); warm.addColorStop(1, `rgba(120,70,40,${.35 * out})`);
+    warm.addColorStop(0, `rgba(255,196,120,${.4 * out})`); warm.addColorStop(1, `rgba(90,70,110,${.25 * out})`);
     g.fillStyle = warm; g.fillRect(0, 0, W, H);
     g.restore();
     const v = g.createRadialGradient(CX, H * .45, Math.min(W, H) * .35, CX, H * .45, Math.max(W, H) * .8);
@@ -539,6 +579,22 @@ document.documentElement.classList.add("js");
     g.restore();
   }
 
+  // soft glow (a small blurred copy laid back on top) and lifted shadows, like an old photo
+  const bloom = document.createElement("canvas"), bg = bloom.getContext("2d");
+  function film() {
+    const bw = Math.max(1, W / 5 | 0), bh = Math.max(1, H / 5 | 0);
+    if (bloom.width !== bw || bloom.height !== bh) { bloom.width = bw; bloom.height = bh; }
+    bg.filter = "blur(3px)"; bg.drawImage(cv, 0, 0, bw, bh); bg.filter = "none";
+    g.save(); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.globalCompositeOperation = "screen"; g.globalAlpha = .2; g.drawImage(bloom, 0, 0, W, H);
+    g.globalAlpha = 1; g.fillStyle = "rgb(24,18,32)"; g.fillRect(0, 0, W, H);   // lift the darks (screen keeps the lights)
+    g.restore();
+  }
+
+  // camera date stamp: today, the old way
+  const d = new Date();
+  $("stamp").textContent = `'${String(d.getFullYear()).slice(2)} ${d.getMonth() + 1} ${d.getDate()}`;
+
   /* ----- copy and scroll ----- */
   const intro = $("intro"), outro = $("outro"), hint = $("hint"), cap1 = $("cap1"), cap2 = $("cap2");
   const progress = () => clamp(-track.getBoundingClientRect().top / (track.offsetHeight - innerHeight));
@@ -562,6 +618,7 @@ document.documentElement.classList.add("js");
       sky(t); ground(); slicesDraw(t); grade(t, inside); particles(t, inside); tunnelLight(t, inside);
     } else lake(t, 1 + span(p, .86, 1) * .15);
     if (flash > 0) { g.fillStyle = `rgba(255,246,222,${flash})`; g.fillRect(0, 0, W, H); }
+    film();
 
     showEl(intro, 1 - span(p, 0, .07)); hint.style.opacity = 1 - span(p, 0, .05);
     showEl(cap1, span(camZ, 26, 28) * (1 - span(camZ, 32, 34)));
