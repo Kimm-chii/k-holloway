@@ -11,7 +11,7 @@
 <!--
   Demo concept. The hero is one canvas drawn every frame: a meadow, a path, a tunnel of trees and a lake.
   Everything is a flat shape placed at a depth (2.5D), so it stays sharp at any size. Scroll moves the walker.
-  Scene numbers live in the SCENE block of the script.
+  Scene numbers live in the SCENE block of the script, colours per season in SEASONS (?season=autumn picks one).
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,10 +78,23 @@ a{color:inherit}
 .cap{position:absolute;z-index:2;left:0;right:0;bottom:calc(14% + env(safe-area-inset-bottom));text-align:center;color:#f3ead2;
   font-size:clamp(18px,2.2vw,24px);font-weight:500;letter-spacing:.01em;opacity:0;text-shadow:0 2px 18px #0b120c;padding:0 24px}
 .hint{position:absolute;z-index:2;right:20px;bottom:calc(28px + env(safe-area-inset-bottom));color:#f5f0e4;font-size:11px;letter-spacing:.28em;text-transform:uppercase;
-  writing-mode:vertical-rl;text-shadow:0 1px 10px #1e2a20}
+  writing-mode:vertical-rl;text-shadow:0 1px 3px #1e2a20aa,0 1px 12px #1e2a20aa}
 @media (max-width:600px){.hint{writing-mode:horizontal-tb;right:auto;left:20px}}
 .hint{animation:bob 2.6s ease-in-out infinite}
 @keyframes bob{50%{translate:0 5px}}
+
+/* season switcher */
+.seasons{position:absolute;z-index:3;left:max(20px,env(safe-area-inset-left));bottom:calc(22px + env(safe-area-inset-bottom));display:flex;gap:2px;padding:3px;
+  background:#f5f0e4d9;border:1px solid #1f2a2026;border-radius:4px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:rise .9s .4s cubic-bezier(.2,.7,.2,1) both}
+@media (min-width:800px){.seasons{left:7vw;bottom:30px}}
+.seasons button{position:relative;min-height:40px;padding:0 13px;border:0;border-radius:2px;background:none;color:var(--muted);font:500 13px/1 var(--font);letter-spacing:.04em;cursor:pointer;
+  transition:color .25s,background-color .25s;-webkit-tap-highlight-color:transparent}
+.seasons button::after{content:"";position:absolute;left:13px;right:13px;bottom:8px;height:1px;background:var(--gold-deep);transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.seasons button:hover{color:var(--ink);background:#1f2a200d}
+.seasons button[aria-pressed="true"]{color:var(--ink);font-weight:600}
+.seasons button[aria-pressed="true"]::after{transform:none}
+.seasons button:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+@media (max-width:600px){.hint{bottom:calc(80px + env(safe-area-inset-bottom))}.seasons button{padding:0 10px}.seasons button::after{left:10px;right:10px}}
 
 /* ============ content ============ */
 section{scroll-margin-top:52px}
@@ -100,7 +113,15 @@ section{scroll-margin-top:52px}
 .rows dd{margin:0}
 .sheet{display:grid;gap:1px;background:var(--d-line);border:1px solid var(--d-line);margin-top:44px;border-radius:6px;overflow:hidden}
 @media (min-width:760px){.sheet{grid-template-columns:repeat(4,1fr)}}
-.sheet div{background:var(--forest);padding:26px 24px 30px}
+.sheet .season-card{display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit;cursor:pointer;background:var(--forest);padding:26px 24px 30px;
+  position:relative;transition:background-color .3s}
+.sheet .season-card::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .45s cubic-bezier(.2,.7,.2,1)}
+.sheet .season-card:hover{background:var(--forest-2)}
+.sheet .season-card[aria-pressed="true"]::before{transform:none}
+.sheet .season-card em{display:inline-flex;gap:6px;margin-top:16px;font-style:normal;font-size:13px;font-weight:600;color:var(--gold)}
+.sheet .season-card em span{display:inline-block;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.sheet .season-card:hover em span,.sheet .season-card:focus-visible em span{transform:translateY(-3px)}
+.sheet .season-card:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 .sheet small{font-size:12px;letter-spacing:.2em;color:var(--gold)}
 .sheet h3{margin:10px 0 6px;font-size:20px;font-weight:700}
 .sheet p{margin:0;color:var(--d-muted);font-size:15px;line-height:1.6}
@@ -154,6 +175,9 @@ document.documentElement.classList.add("js");
         <button class="go" id="go" type="button"><span>Start walking</span><b aria-hidden="true"><i>↓</i></b></button>
       </div>
       <div class="hint" id="hint" aria-hidden="true">Scroll to walk</div>
+      <div class="seasons" role="group" aria-label="Season">
+        <button type="button" data-season="spring">Spring</button><button type="button" data-season="summer">Summer</button><button type="button" data-season="autumn">Autumn</button><button type="button" data-season="winter">Winter</button>
+      </div>
 
       <div class="cap" id="cap1" aria-hidden="true">The lane drops below the fields here.</div>
       <div class="cap" id="cap2" aria-hidden="true">Keep going. There's light ahead.</div>
@@ -186,12 +210,12 @@ document.documentElement.classList.add("js");
     <div class="wrap">
       <div class="label">Through the year</div>
       <h2>It changes every few weeks.</h2>
-      <p class="lede">Same lane, four different walks.</p>
+      <p class="lede">Same lane, four different walks. Pick one to see it.</p>
       <div class="sheet">
-        <div><small>01</small><h3>Spring</h3><p>Bluebells under the hazel and the first warm mornings.</p></div>
-        <div><small>02</small><h3>Summer</h3><p>The tunnel at its thickest. Cool even at noon.</p></div>
-        <div><small>03</small><h3>Autumn</h3><p>Gold leaves on the path and mist on the water.</p></div>
-        <div><small>04</small><h3>Winter</h3><p>Bare branches, long views, frost on the fields.</p></div>
+        <button class="season-card" type="button" data-season="spring"><small>01</small><h3>Spring</h3><p>Bluebells under the hazel and the first warm mornings.</p><em>See it in the lane <span aria-hidden="true">↑</span></em></button>
+        <button class="season-card" type="button" data-season="summer"><small>02</small><h3>Summer</h3><p>The tunnel at its thickest. Cool even at noon.</p><em>See it in the lane <span aria-hidden="true">↑</span></em></button>
+        <button class="season-card" type="button" data-season="autumn"><small>03</small><h3>Autumn</h3><p>Gold leaves on the path and mist on the water.</p><em>See it in the lane <span aria-hidden="true">↑</span></em></button>
+        <button class="season-card" type="button" data-season="winter"><small>04</small><h3>Winter</h3><p>Bare branches, long views, frost on the fields.</p><em>See it in the lane <span aria-hidden="true">↑</span></em></button>
       </div>
     </div>
   </section>
@@ -225,9 +249,76 @@ document.documentElement.classList.add("js");
   const WALK_END = ARCH_END + 3.2;                           // where the walker stops (inside the light)
   const DEPTH = 64, EYE = 1.5;
 
+  /* ===== SEASONS: every colour in the scene comes from here (r, g, b) ===== */
+  const SEASONS = {
+    spring: {
+      sky: [[150, 196, 226], [226, 232, 226], [250, 222, 206]], glow: [255, 236, 214], sun: [255, 250, 236], ray: [255, 240, 220],
+      hills: [[200, 214, 206], [170, 196, 168], [136, 178, 112]], ground: [[178, 196, 120], [120, 170, 72], [70, 120, 48]],
+      lane: [[52, 80, 44], [196, 172, 132], [206, 184, 146], [118, 104, 74], [214, 196, 152]],
+      grass: [[96, 150, 60], [118, 170, 70], [146, 190, 84], [80, 128, 52], [170, 204, 104], [190, 214, 128]], grassH: [.85],
+      leaf: [[52, 92, 44], [74, 120, 54], [104, 150, 70], [236, 178, 196], [248, 206, 220]], leafR: [1], haze: [222, 226, 214],
+      band: [60, 96, 56], trunk: [58, 44, 34], stem: [104, 130, 64], head: [240, 232, 212],
+      flowers: [[248, 246, 240], [120, 132, 226], [244, 170, 196], [248, 220, 90]],
+      warmIn: [255, 214, 190, .35], warmOut: [110, 90, 110, .25], vig: [.2], shaft: [255, 236, 210], mote: [255, 240, 220],
+      parts: { fluff: 0, petal: 1, leaf: 0, snow: 0 },
+      lake: { sky: [[150, 196, 226], [238, 230, 222], [250, 214, 200]], sun: [255, 236, 220], hills: [[176, 196, 190], [110, 150, 96]],
+        water: [[230, 214, 206], [150, 188, 196], [80, 120, 128]], glint: [255, 246, 230], bank: [60, 96, 48], reed: [62, 96, 50], flies: [.25], mist: [0] },
+    },
+    summer: {
+      sky: [[169, 198, 211], [236, 220, 188], [246, 210, 154]], glow: [255, 233, 180], sun: [255, 245, 220], ray: [255, 236, 190],
+      hills: [[205, 199, 173], [180, 185, 156], [147, 162, 120]], ground: [[167, 173, 106], [127, 152, 63], [79, 110, 42]],
+      lane: [[58, 74, 38], [191, 164, 119], [203, 177, 133], [125, 106, 70], [216, 191, 140]],
+      grass: [[86, 112, 44], [104, 132, 52], [128, 150, 60], [72, 96, 40], [150, 160, 70], [176, 168, 84]], grassH: [1],
+      leaf: [[30, 46, 28], [40, 60, 34], [56, 80, 40], [82, 104, 48], [138, 146, 64]], leafR: [1], haze: [214, 206, 168],
+      band: [46, 66, 38], trunk: [44, 34, 24], stem: [96, 98, 52], head: [226, 190, 112],
+      flowers: [[246, 241, 228], [242, 200, 75], [189, 166, 220], [246, 241, 228]],
+      warmIn: [255, 190, 110, .5], warmOut: [120, 70, 40, .35], vig: [.28], shaft: [255, 226, 160], mote: [255, 231, 168],
+      parts: { fluff: 1, petal: 0, leaf: 0, snow: 0 },
+      lake: { sky: [[159, 185, 201], [241, 213, 174], [246, 191, 134]], sun: [255, 220, 160], hills: [[169, 169, 160], [111, 125, 92]],
+        water: [[233, 196, 147], [144, 167, 173], [78, 102, 112]], glint: [255, 233, 184], bank: [51, 69, 42], reed: [42, 58, 34], flies: [1], mist: [0] },
+    },
+    autumn: {
+      sky: [[176, 190, 200], [236, 206, 170], [244, 176, 120]], glow: [255, 206, 150], sun: [255, 232, 196], ray: [255, 214, 160],
+      hills: [[208, 188, 160], [184, 160, 120], [160, 128, 84]], ground: [[186, 160, 96], [160, 126, 60], [104, 80, 40]],
+      lane: [[64, 52, 34], [176, 140, 96], [190, 154, 108], [110, 84, 56], [204, 170, 120]],
+      grass: [[150, 130, 60], [172, 140, 64], [196, 164, 84], [124, 104, 52], [208, 176, 96], [220, 190, 112]], grassH: [.9],
+      leaf: [[120, 52, 30], [164, 74, 34], [204, 110, 42], [228, 150, 54], [240, 190, 84]], leafR: [.92], haze: [222, 200, 170],
+      band: [96, 64, 40], trunk: [46, 32, 24], stem: [120, 96, 52], head: [200, 150, 90],
+      flowers: [[214, 120, 60], [236, 190, 90], [170, 90, 60], [240, 214, 150]],
+      warmIn: [255, 170, 90, .55], warmOut: [110, 50, 30, .38], vig: [.32], shaft: [255, 200, 130], mote: [255, 210, 150],
+      parts: { fluff: 0, petal: 0, leaf: 1, snow: 0 },
+      lake: { sky: [[170, 184, 196], [238, 200, 160], [244, 160, 104]], sun: [255, 200, 140], hills: [[170, 150, 130], [120, 92, 60]],
+        water: [[228, 170, 110], [140, 140, 140], [70, 80, 86]], glint: [255, 214, 160], bank: [70, 56, 34], reed: [92, 70, 40], flies: [0], mist: [.55] },
+    },
+    winter: {
+      sky: [[176, 198, 220], [222, 230, 236], [240, 232, 224]], glow: [255, 246, 232], sun: [255, 252, 244], ray: [240, 244, 255],
+      hills: [[214, 224, 232], [196, 210, 222], [214, 222, 230]], ground: [[226, 232, 238], [214, 224, 234], [188, 202, 216]],
+      lane: [[150, 160, 170], [176, 170, 160], [196, 192, 186], [130, 124, 118], [214, 214, 212]],
+      grass: [[196, 186, 150], [214, 206, 176], [232, 232, 226], [170, 160, 130], [240, 242, 244], [222, 214, 190]], grassH: [.55],
+      leaf: [[150, 166, 182], [186, 198, 210], [222, 230, 238], [240, 244, 248], [250, 252, 255]], leafR: [.6], haze: [226, 232, 238],
+      band: [120, 134, 150], trunk: [62, 52, 46], stem: [150, 140, 116], head: [240, 240, 236],
+      flowers: [[250, 252, 255], [250, 252, 255], [224, 232, 244], [250, 252, 255]],
+      warmIn: [255, 236, 220, .25], warmOut: [70, 90, 120, .3], vig: [.22], shaft: [230, 240, 255], mote: [255, 255, 255],
+      parts: { fluff: 0, petal: 0, leaf: 0, snow: 1 },
+      lake: { sky: [[170, 192, 214], [224, 232, 238], [238, 230, 224]], sun: [255, 248, 236], hills: [[200, 212, 224], [160, 176, 190]],
+        water: [[226, 234, 240], [196, 210, 222], [150, 170, 186]], glint: [255, 255, 255], bank: [214, 222, 230], reed: [150, 140, 120], flies: [0], mist: [.25] },
+    },
+  };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  // the current palette eases toward the chosen season every frame, so a switch is a soft fade
+  function ease2(cur, tgt, k) {
+    let moved = 0;
+    for (const key in tgt) {
+      const a = cur[key], b = tgt[key];
+      if (typeof b === "number") { const d = b - a; cur[key] = Math.abs(d) < .002 ? b : a + d * k; moved = Math.max(moved, Math.abs(d)); }
+      else moved = Math.max(moved, ease2(a, b, k));
+    }
+    return moved;
+  }
+
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = id => document.getElementById(id);
-  const cv = $("scene"), cx2 = cv.getContext("2d"), track = $("track"), nav = $("nav");
+  const cv = $("scene"), g = cv.getContext("2d", { alpha: false }), track = $("track"), nav = $("nav");
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const R = (a, b) => a + rnd() * (b - a);
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -235,7 +326,17 @@ document.documentElement.classList.add("js");
   const smooth = t => t * t * (3 - 2 * t);
   const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   const lerp = (a, b, t) => a + (b - a) * t;
+  const rgb = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+  const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
   const mix = (c, d, t) => `rgb(${lerp(c[0], d[0], t) | 0},${lerp(c[1], d[1], t) | 0},${lerp(c[2], d[2], t) | 0})`;
+
+  /* ----- season choice: ?season=autumn, else the last one picked, else summer ----- */
+  const NAMES = ["spring", "summer", "autumn", "winter"];
+  let season = new URLSearchParams(location.search).get("season");
+  if (!NAMES.includes(season)) { try { season = localStorage.getItem("holloway-season"); } catch (e) { season = null; } }
+  if (!NAMES.includes(season)) season = "summer";
+  const C = clone(SEASONS[season]);
+  let target = SEASONS[season], settling = 0;
 
   /* ----- build the world once, sorted into 1 m depth slices ----- */
   const slices = Array.from({ length: DEPTH }, () => ({ blades: {}, leaves: {}, trunks: [], flowers: [], bands: [], stalks: [] }));
@@ -243,9 +344,6 @@ document.documentElement.classList.add("js");
     const s = slices[Math.min(DEPTH - 1, Math.max(0, Math.floor(z)))];
     if (key == null) s[kind].push(item); else (s[kind][key] ||= []).push(item);
   };
-  const GRASS = [[86, 112, 44], [104, 132, 52], [128, 150, 60], [72, 96, 40], [150, 160, 70], [176, 168, 84]];
-  const LEAF = [[30, 46, 28], [40, 60, 34], [56, 80, 40], [82, 104, 48], [138, 146, 64]];
-  const HAZE = [214, 206, 168];
   const inTunnel = z => z > ARCH_START - 1.8 && z < ARCH_END + 1.8;
 
   for (let i = 0; i < 2600; i++) {
@@ -254,8 +352,8 @@ document.documentElement.classList.add("js");
     if (inTunnel(z) && Math.abs(x) < 2.6) continue;           // under the trees
     const h = inTunnel(z) ? R(.15, .35) : R(.35, .85) * (z < 6 ? 1.2 : 1);
     const b = { x, z, h, l: R(-.18, .18), w: R(.018, .03), ph: R(0, 6.28) };
-    put(z, "blades", inTunnel(z) ? 3 : Math.floor(rnd() * GRASS.length), b);
-    if (z < 34 && !inTunnel(z) && rnd() < .09) put(z, "flowers", null, { b, c: ["#f6f1e4", "#f2c84b", "#bda6dc", "#f6f1e4"][Math.floor(rnd() * 4)] });
+    put(z, "blades", inTunnel(z) ? 3 : Math.floor(rnd() * 6), b);
+    if (z < 34 && !inTunnel(z) && rnd() < .09) put(z, "flowers", null, { b, c: Math.floor(rnd() * 4) });
   }
   for (let k = 0; k < ARCHES; k++) {
     const az = ARCH_START + k * ARCH_GAP;
@@ -296,20 +394,24 @@ document.documentElement.classList.add("js");
   });
   const hillsFar = ridge(80, .05, 6), hillsNear = ridge(80, .035, 9), hillsMid = ridge(80, .04, 4);
 
-  // floating seeds outside, dust in the tunnel, fireflies at the water
-  const seeds = Array.from({ length: 60 }, () => ({ x: R(-6, 6), y: R(.4, 3.2), z: R(1, 22), v: R(.2, .5), ph: R(0, 6.28) }));
+  // things in the air (fluff, petals, leaves or snow by season), dust in the tunnel, fireflies at the water
+  const air = Array.from({ length: 70 }, () => ({ x: R(-6, 6), y: R(.2, 3.6), z: R(1, 22), v: R(.6, 1.4), ph: R(0, 6.28), c: Math.floor(rnd() * 3) }));
+  const sky2 = Array.from({ length: 70 }, () => ({ x: R(0, 1), y: R(0, 1), v: R(.6, 1.4), ph: R(0, 6.28), s: R(.6, 1.4), c: Math.floor(rnd() * 3) }));
   const motes = Array.from({ length: 90 }, () => ({ x: R(-2, 2), y: R(.4, 4), z: R(ARCH_START, ARCH_END), ph: R(0, 6.28) }));
   const flies = Array.from({ length: 16 }, () => ({ x: R(0, 1), y: R(.62, .95), ph: R(0, 6.28), sp: R(.3, .8) }));
   const reeds = Array.from({ length: 46 }, () => ({ x: rnd() < .5 ? R(-.05, .3) : R(.7, 1.05), h: R(.1, .3), l: R(-.03, .03), ph: R(0, 6.28), w: R(2, 4) }));
+  const PETAL = [[248, 196, 214], [252, 222, 232], [240, 176, 200]], LEAFC = [[214, 110, 44], [236, 170, 64], [180, 70, 40]];
 
-  /* ----- sizing ----- */
-  let W = 0, H = 0, dpr = 1, F = 1, HY = 0, CX = 0;
+  /* ----- sizing, with resolution that steps down on slow devices ----- */
+  let W = 0, H = 0, dpr = 0, maxDpr = 1, F = 1, HY = 0, CX = 0;
+  const applySize = () => { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); };
   const size = () => {
     const r = cv.getBoundingClientRect();
     if (Math.round(r.width) === W && Math.round(r.height) === H) return;
     W = Math.round(r.width); H = Math.round(r.height);
-    dpr = Math.min(devicePixelRatio || 1, W < 700 ? 2 : 1.75);
-    cv.width = W * dpr; cv.height = H * dpr;
+    maxDpr = Math.min(devicePixelRatio || 1, W < 700 ? 2 : 1.75);
+    dpr = dpr ? Math.min(dpr, maxDpr) : maxDpr;
+    applySize();
     F = Math.max(H * .95, W * .62); HY = H * (W < H ? .68 : .58); CX = W / 2;
   };
   size(); addEventListener("resize", size);
@@ -318,26 +420,25 @@ document.documentElement.classList.add("js");
   addEventListener("pointermove", e => { if (e.pointerType === "mouse") mx = e.clientX / innerWidth - .5; }, { passive: true });
 
   /* ----- drawing ----- */
-  const g = cx2;
   let camZ = 0, camX = 0, camY = EYE;
   const sunPos = () => { const k = 1 + camZ / 140; return [CX + W * .16 * k - camX * 4, HY - H * .125 * k]; };
 
   function sky(t) {
     const s = g.createLinearGradient(0, 0, 0, HY);
-    s.addColorStop(0, "#a9c6d3"); s.addColorStop(.55, "#ecdcbc"); s.addColorStop(1, "#f6d29a");
+    s.addColorStop(0, rgb(C.sky[0])); s.addColorStop(.55, rgb(C.sky[1])); s.addColorStop(1, rgb(C.sky[2]));
     g.fillStyle = s; g.fillRect(0, 0, W, HY + 2);
     const [sunX, sunY] = sunPos(), sr = H * .55;
     const glow = g.createRadialGradient(sunX, sunY, 0, sunX, sunY, sr);
-    glow.addColorStop(0, "#fff6dc"); glow.addColorStop(.12, "#ffe9b4cc"); glow.addColorStop(1, "#ffe9b400");
+    glow.addColorStop(0, rgba(C.sun, 1)); glow.addColorStop(.12, rgba(C.glow, .8)); glow.addColorStop(1, rgba(C.glow, 0));
     g.fillStyle = glow; g.fillRect(0, 0, W, H);
     // the low sun itself, half hidden by the far ridge
     const k = 1 + camZ / 140;
-    g.fillStyle = "#fff5dc"; g.beginPath(); g.arc(sunX, sunY, H * .042, 0, 6.2832); g.fill();
+    g.fillStyle = rgb(C.sun); g.beginPath(); g.arc(sunX, sunY, H * .042, 0, 6.2832); g.fill();
     g.save(); g.globalCompositeOperation = "lighter";              // soft beams fanning out behind the trees
     for (const r of rays) {
       const a = r.a + Math.sin(t * .04 + r.ph) * .04, L = Math.hypot(W, H) * r.len, w = r.w;
       const rg = g.createRadialGradient(sunX, sunY, H * .03, sunX, sunY, L);
-      rg.addColorStop(0, `rgba(255,236,190,${r.o})`); rg.addColorStop(1, "rgba(255,236,190,0)");
+      rg.addColorStop(0, rgba(C.ray, r.o)); rg.addColorStop(1, rgba(C.ray, 0));
       g.fillStyle = rg; g.beginPath(); g.moveTo(sunX, sunY);
       g.lineTo(sunX + Math.cos(a - w) * L, sunY + Math.sin(a - w) * L); g.lineTo(sunX + Math.cos(a + w) * L, sunY + Math.sin(a + w) * L); g.fill();
     }
@@ -347,7 +448,7 @@ document.documentElement.classList.add("js");
       const x = ((c.x + (reduce ? 0 : t * c.v)) % 1.4 - .2) * W, y = c.y * H, w = c.w * W;
       for (const [px, py, pr] of c.puffs) {
         const cg = g.createRadialGradient(x + px * w, y + py * w * .5, 0, x + px * w, y + py * w * .5, pr * w);
-        cg.addColorStop(0, "rgba(255,246,228,.42)"); cg.addColorStop(.6, "rgba(255,226,196,.16)"); cg.addColorStop(1, "rgba(255,226,196,0)");
+        cg.addColorStop(0, rgba(C.sun, .42)); cg.addColorStop(.6, rgba(C.glow, .16)); cg.addColorStop(1, rgba(C.glow, 0));
         g.fillStyle = cg; g.beginPath(); g.ellipse(x + px * w, y + py * w * .5, pr * w, pr * w * .38, 0, 0, 6.2832); g.fill();
       }
     }
@@ -355,14 +456,14 @@ document.documentElement.classList.add("js");
     const hills = (pts, base, col) => {
       g.beginPath(); g.moveTo(-10, H);
       pts.forEach(([u, a]) => g.lineTo(CX + (u * W - CX) * k - camX * 4, HY - (base + a) * H * k));
-      g.lineTo(W + 10, H); g.fillStyle = col; g.fill();
+      g.lineTo(W + 10, H); g.fillStyle = rgb(col); g.fill();
     };
-    hills(hillsMid, .085, "#cdc7ad"); hills(hillsFar, .06, "#b4b99c"); hills(hillsNear, .03, "#93a278");
-    // a few birds heading home
+    hills(hillsMid, .085, C.hills[0]); hills(hillsFar, .06, C.hills[1]); hills(hillsNear, .03, C.hills[2]);
+    // a few birds heading home (they stay on the right, clear of the headline)
     g.strokeStyle = "rgba(52,50,40,.65)"; g.lineCap = "round"; g.lineWidth = 1.4;
-    if (W >= 700) for (const b of birds) {                       // they stay on the right, clear of the headline
+    if (W >= 700 && C.parts.snow < .5) for (const b of birds) {
       const u = .5 + (b.x + (reduce ? 0 : t * b.v)) % .62;
-      g.globalAlpha = clamp((u - .5) / .06);
+      g.globalAlpha = clamp((u - .5) / .06) * (1 - C.parts.snow);
       const x = u * W, y = b.y * H + Math.sin(t * .5 + b.ph) * 6, flap = reduce ? .4 : Math.sin(t * b.f + b.ph) * .7;
       g.beginPath(); g.moveTo(x - b.s, y - flap * b.s * .6); g.quadraticCurveTo(x - b.s * .4, y - b.s * .3, x, y);
       g.quadraticCurveTo(x + b.s * .4, y - b.s * .3, x + b.s, y - flap * b.s * .6); g.stroke();
@@ -372,7 +473,7 @@ document.documentElement.classList.add("js");
 
   function ground() {
     const gr = g.createLinearGradient(0, HY - 4, 0, H);
-    gr.addColorStop(0, "#a7ad6a"); gr.addColorStop(.35, "#7f983f"); gr.addColorStop(1, "#4f6e2a");
+    gr.addColorStop(0, rgb(C.ground[0])); gr.addColorStop(.35, rgb(C.ground[1])); gr.addColorStop(1, rgb(C.ground[2]));
     g.fillStyle = gr; g.fillRect(0, HY - H * .02, W, H);
     // the lane: packed earth, darker under the trees
     const P = (x, z) => { const d = Math.max(.3, z - camZ), s = F / d; return [CX + (x - camX) * s, HY + camY * s]; };
@@ -380,53 +481,53 @@ document.documentElement.classList.add("js");
       if (z1 - camZ < .3) return;
       z0 = Math.max(z0, camZ + .3);
       const a = P(x0, z0), b = P(x1, z0), c = P(x1 * .9, z1), d = P(x0 * .9, z1);
-      g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.lineTo(...c); g.lineTo(...d); g.closePath(); g.fillStyle = col; g.fill();
+      g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.lineTo(...c); g.lineTo(...d); g.closePath(); g.fillStyle = rgb(col); g.fill();
     };
-    lane(-3.2, 3.2, ARCH_START - 2, ARCH_END + 2, "#3a4a26");
-    lane(-1.05, 1.05, 0, ARCH_START - 1, "#bfa477"); lane(-.55, .55, 0, ARCH_START - 1, "#cbb185");
-    lane(-1, 1, ARCH_START - 1.5, ARCH_END + 1.5, "#7d6a46");
-    lane(-1, 1, ARCH_END + 1, 62, "#d8bf8c");
+    lane(-3.2, 3.2, ARCH_START - 2, ARCH_END + 2, C.lane[0]);
+    lane(-1.05, 1.05, 0, ARCH_START - 1, C.lane[1]); lane(-.55, .55, 0, ARCH_START - 1, C.lane[2]);
+    lane(-1, 1, ARCH_START - 1.5, ARCH_END + 1.5, C.lane[3]);
+    lane(-1, 1, ARCH_END + 1, 62, C.lane[4]);
   }
 
   function slicesDraw(t) {
-    const wind = reduce ? 0 : 1;
+    const wind = reduce ? 0 : 1, gh = C.grassH[0], lr = C.leafR[0];
+    const [sunX, sunY] = sunPos();
     for (let i = DEPTH - 1; i >= 0; i--) {
       const s = slices[i], dzMid = i + .5 - camZ;
       if (dzMid < .2) break;
       const fade = clamp((dzMid - .35) / .7);
       if (fade <= 0) continue;
       g.globalAlpha = fade;
-      const hz = clamp(dzMid / 70) * .7;
+      const hz = clamp(dzMid / 70) * .7, far = dzMid > 26;     // far slices: every other blade is plenty
 
       // back woods band
       for (const b of s.bands) {
         const d = b.z - camZ, sc = F / d;
-        g.fillStyle = mix([46, 66, 38], HAZE, hz);
+        g.fillStyle = mix(C.band, C.haze, hz);
         g.fillRect(CX + (b.x0 - camX) * sc, HY + (camY - b.y) * sc, (b.x1 - b.x0) * sc, b.y * sc + 2);
       }
       // trunks
       for (const tr of s.trunks) {
         const d = tr.z - camZ; if (d < .2) continue;
         const sc = F / d, bx = CX + (tr.x - camX) * sc, by = HY + camY * sc, tx = CX + (tr.x + tr.lean - camX) * sc, ty = HY + (camY - 5.6) * sc, w = tr.w * sc;
-        g.fillStyle = mix([44, 34, 24], HAZE, hz * .6);
+        g.fillStyle = mix(C.trunk, C.haze, hz * .6);
         g.beginPath(); g.moveTo(bx - w, by); g.lineTo(tx - w * .55, ty); g.lineTo(tx + w * .55, ty); g.lineTo(bx + w, by); g.fill();
       }
       // leaves: a shaded clump, then its lit side facing the sun
-      const [sunX, sunY] = sunPos();
       for (const key in s.leaves) {
-        const base = LEAF[key], lit = [base[0] + 30, base[1] + 30, base[2] + 10];
+        const base = C.leaf[key], lit = [base[0] + 30, base[1] + 30, base[2] + 10];
         const vis = [];
         for (const lf of s.leaves[key]) {
           const d = lf.z - camZ; if (d < .2) continue;
-          const sc = F / d, x = CX + (lf.x - camX) * sc, y = HY + (camY - lf.y) * sc, r = lf.r * sc;
+          const sc = F / d, x = CX + (lf.x - camX) * sc, y = HY + (camY - lf.y) * sc, r = lf.r * sc * lr;
           if (x + r < 0 || x - r > W || y + r < 0 || y - r > H) continue;
           vis.push(x, y, r);
         }
         if (!vis.length) continue;
-        g.fillStyle = mix(base, HAZE, hz); g.beginPath();
+        g.fillStyle = mix(base, C.haze, hz); g.beginPath();
         for (let j = 0; j < vis.length; j += 3) { g.moveTo(vis[j] + vis[j + 2], vis[j + 1]); g.arc(vis[j], vis[j + 1], vis[j + 2], 0, 6.2832); }
         g.fill();
-        g.fillStyle = mix(lit, HAZE, hz * .8); g.beginPath();
+        g.fillStyle = mix(lit, C.haze, hz * .8); g.beginPath();
         for (let j = 0; j < vis.length; j += 3) {
           const x = vis[j], y = vis[j + 1], r = vis[j + 2], dx = sunX - x, dy = sunY - y, n = Math.hypot(dx, dy) || 1;
           const hx = x + dx / n * r * .22, hy = y + dy / n * r * .22 - r * .1, hr = r * .8;
@@ -434,21 +535,22 @@ document.documentElement.classList.add("js");
         }
         g.fill();
       }
-      // grass
-      const ssc = F / Math.max(.2, dzMid), gy0 = HY + camY * ssc, gy1 = HY + (camY - .8) * ssc;
+      // grass: dark at the root, light at the tip
+      const ssc = F / Math.max(.2, dzMid), gy0 = HY + camY * ssc, gy1 = HY + (camY - .8 * gh) * ssc;
       for (const key in s.blades) {
-        const gg = g.createLinearGradient(0, gy0, 0, gy1), c = GRASS[key];
-        gg.addColorStop(0, mix([c[0] * .55, c[1] * .62, c[2] * .5], HAZE, hz));
-        gg.addColorStop(.55, mix(c, HAZE, hz));
-        gg.addColorStop(1, mix([c[0] + 90, c[1] + 70, c[2] + 40], HAZE, hz));
+        const gg = g.createLinearGradient(0, gy0, 0, gy1), c = C.grass[key];
+        gg.addColorStop(0, mix([c[0] * .55, c[1] * .62, c[2] * .5], C.haze, hz));
+        gg.addColorStop(.55, mix(c, C.haze, hz));
+        gg.addColorStop(1, mix([c[0] + 90, c[1] + 70, c[2] + 40], C.haze, hz));
         g.fillStyle = gg;
         g.beginPath();
-        for (const b of s.blades[key]) {
-          const d = b.z - camZ; if (d < .2) continue;
+        const list = s.blades[key];
+        for (let j = 0; j < list.length; j += far ? 2 : 1) {
+          const b = list[j], d = b.z - camZ; if (d < .2) continue;
           const sc = F / d, bx = CX + (b.x - camX) * sc;
           if (bx < -60 || bx > W + 60) continue;
-          const sw = wind * (Math.sin(t * 1.7 + b.ph + b.z * .3) * .07 + Math.sin(t * .6 + b.z * .12) * .06) * b.h;
-          const by = HY + camY * sc, tx = CX + (b.x + b.l + sw - camX) * sc, ty = HY + (camY - b.h) * sc, w = b.w * sc;
+          const h = b.h * gh, sw = wind * (Math.sin(t * 1.7 + b.ph + b.z * .3) * .07 + Math.sin(t * .6 + b.z * .12) * .06) * h;
+          const by = HY + camY * sc, tx = CX + (b.x + b.l + sw - camX) * sc, ty = HY + (camY - h) * sc, w = b.w * sc;
           const mxp = lerp(bx, tx, .35), myp = lerp(by, ty, .55);
           g.moveTo(bx - w, by); g.quadraticCurveTo(mxp - w * .5, myp, tx, ty); g.quadraticCurveTo(mxp + w * .5, myp, bx + w, by);
         }
@@ -457,41 +559,61 @@ document.documentElement.classList.add("js");
       // seed stalks: thin stem, a glowing head
       for (const st of s.stalks) {
         const d = st.z - camZ; if (d < .2) continue;
-        const sc = F / d, sw = wind * Math.sin(t * 1.3 + st.ph) * .06 * st.h;
-        const bx = CX + (st.x - camX) * sc, by = HY + camY * sc, tx = CX + (st.x + st.l + sw - camX) * sc, ty = HY + (camY - st.h) * sc;
-        g.strokeStyle = mix([96, 98, 52], HAZE, hz); g.lineWidth = Math.max(.8, .012 * sc);
+        const h = st.h * (.5 + gh * .5), sc = F / d, sw = wind * Math.sin(t * 1.3 + st.ph) * .06 * h;
+        const bx = CX + (st.x - camX) * sc, by = HY + camY * sc, tx = CX + (st.x + st.l + sw - camX) * sc, ty = HY + (camY - h) * sc;
+        g.strokeStyle = mix(C.stem, C.haze, hz); g.lineWidth = Math.max(.8, .012 * sc);
         g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(bx, lerp(by, ty, .6), tx, ty); g.stroke();
-        g.fillStyle = mix([226, 190, 112], HAZE, hz);
+        g.fillStyle = mix(C.head, C.haze, hz);
         g.beginPath(); g.ellipse(tx, ty + .05 * sc, Math.max(1, .022 * sc), Math.max(2, .09 * sc), (st.l + sw) * 1.2, 0, 6.2832); g.fill();
       }
       // flowers on top of their blades
       for (const fl of s.flowers) {
         const b = fl.b, d = b.z - camZ; if (d < .2) continue;
-        const sc = F / d, sw = wind * (Math.sin(t * 1.7 + b.ph + b.z * .3) * .07 + Math.sin(t * .6 + b.z * .12) * .06) * b.h;
-        const x = CX + (b.x + b.l + sw - camX) * sc, y = HY + (camY - b.h) * sc;
-        g.fillStyle = fl.c; g.beginPath(); g.arc(x, y, Math.max(.8, .035 * sc), 0, 6.2832); g.fill();
+        const h = b.h * gh, sc = F / d, sw = wind * (Math.sin(t * 1.7 + b.ph + b.z * .3) * .07 + Math.sin(t * .6 + b.z * .12) * .06) * h;
+        const x = CX + (b.x + b.l + sw - camX) * sc, y = HY + (camY - h) * sc;
+        g.fillStyle = rgb(C.flowers[fl.c]); g.beginPath(); g.arc(x, y, Math.max(.8, .035 * sc), 0, 6.2832); g.fill();
       }
     }
     g.globalAlpha = 1;
   }
 
+  // one drifting thing in the air, drawn by kind
+  function airDot(kind, X, Y, sc, p, t, a) {
+    if (kind === "fluff") { g.globalAlpha = a * .55; g.fillStyle = "#fff8e6"; g.beginPath(); g.arc(X, Y, Math.max(.7, .02 * sc), 0, 6.2832); g.fill(); }
+    if (kind === "snow") { g.globalAlpha = a * .9; g.fillStyle = "#ffffff"; g.beginPath(); g.arc(X, Y, Math.max(.9, .022 * sc), 0, 6.2832); g.fill(); }
+    if (kind === "petal" || kind === "leaf") {
+      const r = Math.max(1.4, (kind === "leaf" ? .05 : .032) * sc), rot = t * p.v * 2 + p.ph;
+      g.globalAlpha = a * .9; g.fillStyle = rgb((kind === "leaf" ? LEAFC : PETAL)[p.c]);
+      g.beginPath(); g.ellipse(X, Y, r, r * (.35 + .3 * Math.abs(Math.cos(rot))), rot, 0, 6.2832); g.fill();
+    }
+  }
+  const FALL = { fluff: 0, petal: .22, leaf: .45, snow: .32 };
   function particles(t, inside) {
-    g.save(); g.globalCompositeOperation = "lighter";
-    if (inside < 1) for (const p of seeds) {                    // dandelion fluff drifting across the meadow
-      let z = p.z - camZ; if (z < .6) z += 22 * Math.ceil((.6 - z) / 22);
-      const x = p.x + Math.sin(t * p.v + p.ph) * .6 + (reduce ? 0 : (t * p.v * .3) % 4) - 2;
-      const y = p.y + Math.sin(t * .7 + p.ph) * .25, sc = F / z;
-      const X = CX + (x - camX) * sc, Y = HY + (camY - y) * sc;
-      g.globalAlpha = .55 * (1 - inside) * clamp(z / 3); g.fillStyle = "#fff8e6";
-      g.beginPath(); g.arc(X, Y, Math.max(.7, .02 * sc), 0, 6.2832); g.fill();
+    for (const kind in C.parts) {
+      const w = C.parts[kind]; if (w < .02) continue;
+      const vis = kind === "snow" ? 1 - inside * .6 : 1 - inside; if (vis <= 0) continue;
+      if (kind === "fluff") { g.save(); g.globalCompositeOperation = "lighter"; }
+      for (const p of air) {
+        let z = p.z - camZ; if (z < .6) z += 22 * Math.ceil((.6 - z) / 22);
+        const tt = reduce ? 0 : t;
+        const x = p.x + Math.sin(tt * .5 * p.v + p.ph) * .6 + (kind === "fluff" ? (tt * p.v * .1) % 4 - 2 : Math.sin(tt * .3 + p.ph) * .4);
+        const y = FALL[kind] ? 3.8 - ((tt * FALL[kind] * p.v + p.y) % 3.8) : p.y + Math.sin(tt * .7 + p.ph) * .25;
+        const sc = F / z;
+        airDot(kind, CX + (x - camX) * sc, HY + (camY - y) * sc, sc, p, tt, w * vis * clamp(z / 3));
+      }
+      if (kind === "fluff") g.restore();
     }
-    if (inside > 0) for (const m of motes) {                    // dust in the light under the trees
-      const z = m.z - camZ; if (z < .4) continue;
-      const sc = F / z, y = m.y + Math.sin(t * .4 + m.ph) * .2, x = m.x + Math.cos(t * .3 + m.ph) * .15;
-      g.globalAlpha = inside * clamp(z / 2) * (.35 + .35 * Math.sin(t * 1.3 + m.ph)); g.fillStyle = "#ffe7a8";
-      g.beginPath(); g.arc(CX + (x - camX) * sc, HY + (camY - y) * sc, Math.max(.6, .018 * sc), 0, 6.2832); g.fill();
+    g.globalAlpha = 1;
+    if (inside > 0) {                                          // dust in the light under the trees
+      g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = rgb(C.mote);
+      for (const m of motes) {
+        const z = m.z - camZ; if (z < .4) continue;
+        const sc = F / z, y = m.y + Math.sin(t * .4 + m.ph) * .2, x = m.x + Math.cos(t * .3 + m.ph) * .15;
+        g.globalAlpha = inside * clamp(z / 2) * (.35 + .35 * Math.sin(t * 1.3 + m.ph));
+        g.beginPath(); g.arc(CX + (x - camX) * sc, HY + (camY - y) * sc, Math.max(.6, .018 * sc), 0, 6.2832); g.fill();
+      }
+      g.restore();
     }
-    g.restore();
   }
 
   function grade(t, inside) {
@@ -499,11 +621,11 @@ document.documentElement.classList.add("js");
     const [sx0, sy0] = sunPos();
     g.save(); g.globalCompositeOperation = "soft-light";
     const warm = g.createRadialGradient(sx0, sy0, 0, sx0, sy0, Math.max(W, H));
-    warm.addColorStop(0, `rgba(255,190,110,${.5 * out})`); warm.addColorStop(1, `rgba(120,70,40,${.35 * out})`);
+    warm.addColorStop(0, rgba(C.warmIn, C.warmIn[3] * out)); warm.addColorStop(1, rgba(C.warmOut, C.warmOut[3] * out));
     g.fillStyle = warm; g.fillRect(0, 0, W, H);
     g.restore();
     const v = g.createRadialGradient(CX, H * .45, Math.min(W, H) * .35, CX, H * .45, Math.max(W, H) * .8);
-    v.addColorStop(0, "rgba(40,30,18,0)"); v.addColorStop(1, `rgba(40,30,18,${.28 * out})`);
+    v.addColorStop(0, "rgba(40,30,18,0)"); v.addColorStop(1, `rgba(40,30,18,${C.vig[0] * out})`);
     g.fillStyle = v; g.fillRect(0, 0, W, H);
   }
 
@@ -518,53 +640,71 @@ document.documentElement.classList.add("js");
     for (let i = 0; i < 4; i++) {
       const x = W * (.18 + i * .22) + Math.sin(t * .15 + i) * W * .03, w = W * (.04 + i % 2 * .03);
       const gr = g.createLinearGradient(x, 0, x - W * .25, H);
-      gr.addColorStop(0, `rgba(255,226,160,${.1 * inside})`); gr.addColorStop(1, "rgba(255,226,160,0)");
+      gr.addColorStop(0, rgba(C.shaft, .1 * inside)); gr.addColorStop(1, rgba(C.shaft, 0));
       g.fillStyle = gr; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + w, 0); g.lineTo(x + w - W * .25, H); g.lineTo(x - W * .25, H); g.fill();
     }
     g.restore();
   }
 
-  function lake(t, k) {                                         // the far side: a pond at golden hour
-    const hy = H * .55;
+  function lake(t, k) {                                         // the far side: a pond
+    const L = C.lake, hy = H * .55;
     const s = g.createLinearGradient(0, 0, 0, hy);
-    s.addColorStop(0, "#9fb9c9"); s.addColorStop(.6, "#f1d5ae"); s.addColorStop(1, "#f6bf86");
+    s.addColorStop(0, rgb(L.sky[0])); s.addColorStop(.6, rgb(L.sky[1])); s.addColorStop(1, rgb(L.sky[2]));
     g.fillStyle = s; g.fillRect(0, 0, W, hy + 1);
     const sun = g.createRadialGradient(W * .62, hy - H * .02, 0, W * .62, hy - H * .02, H * .45);
-    sun.addColorStop(0, "#fff4d8"); sun.addColorStop(.1, "#ffdca0cc"); sun.addColorStop(1, "#ffdca000");
+    sun.addColorStop(0, "#fff4d8"); sun.addColorStop(.1, rgba(L.sun, .8)); sun.addColorStop(1, rgba(L.sun, 0));
     g.fillStyle = sun; g.fillRect(0, 0, W, H);
     const hills = (pts, base, col) => {
       g.beginPath(); g.moveTo(-10, hy + 1);
-      pts.forEach(([u, a]) => g.lineTo(u * W, hy - (base + a) * H * k)); g.lineTo(W + 10, hy + 1); g.fillStyle = col; g.fill();
+      pts.forEach(([u, a]) => g.lineTo(u * W, hy - (base + a) * H * k)); g.lineTo(W + 10, hy + 1); g.fillStyle = rgb(col); g.fill();
     };
-    hills(hillsFar, .07, "#a9a9a0"); hills(hillsNear, .035, "#6f7d5c");
+    hills(hillsFar, .07, L.hills[0]); hills(hillsNear, .035, L.hills[1]);
     // water with the sky reflected and a moving sun path
     const wg = g.createLinearGradient(0, hy, 0, H);
-    wg.addColorStop(0, "#e9c493"); wg.addColorStop(.35, "#90a7ad"); wg.addColorStop(1, "#4e6670");
+    wg.addColorStop(0, rgb(L.water[0])); wg.addColorStop(.35, rgb(L.water[1])); wg.addColorStop(1, rgb(L.water[2]));
     g.fillStyle = wg; g.fillRect(0, hy, W, H - hy);
-    g.save(); g.globalCompositeOperation = "lighter";
+    g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = rgb(L.glint);
     for (let i = 0; i < 46; i++) {
       const y = hy + 2 + Math.pow(i / 46, 1.5) * (H - hy) * .8, spread = 18 + (y - hy) * 1.1;
       const x = W * .62 + Math.sin(i * 2.7 + t * .6) * spread * .25, len = spread * (.4 + .6 * Math.abs(Math.sin(i * 3.1 + t * 1.1)));
-      g.globalAlpha = .32 * (1 - i / 52); g.fillStyle = "#ffe9b8"; g.fillRect(x - len / 2, y, len, Math.max(1, (y - hy) * .012));
+      g.globalAlpha = .32 * (1 - i / 52); g.fillRect(x - len / 2, y, len, Math.max(1, (y - hy) * .012));
     }
     g.restore();
+    // morning mist over the water (autumn and winter)
+    if (L.mist[0] > .01) {
+      const m = g.createLinearGradient(0, hy - H * .08, 0, hy + H * .12);
+      m.addColorStop(0, "rgba(255,250,244,0)"); m.addColorStop(.5, `rgba(255,250,244,${L.mist[0] * .7})`); m.addColorStop(1, "rgba(255,250,244,0)");
+      g.fillStyle = m; g.fillRect(0, hy - H * .08, W, H * .2);
+    }
     // near bank and reeds
-    g.fillStyle = "#33452a"; g.beginPath(); g.moveTo(0, H); g.lineTo(0, H * .86);
+    g.fillStyle = rgb(L.bank); g.beginPath(); g.moveTo(0, H); g.lineTo(0, H * .86);
     g.quadraticCurveTo(W * .3, H * .9, W * .55, H * .95); g.quadraticCurveTo(W * .8, H * .99, W, H * .9); g.lineTo(W, H); g.fill();
-    g.strokeStyle = "#2a3a22"; g.lineCap = "round";
+    g.strokeStyle = rgb(L.reed); g.lineCap = "round";
     for (const r of reeds) {
       const bx = r.x * W, by = H * (.9 + Math.abs(Math.sin(r.x * 7)) * .06) + 10, sw = reduce ? 0 : Math.sin(t * 1.2 + r.ph) * .012;
       g.lineWidth = r.w * Math.max(1, W / 1400);
       g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(bx, by - r.h * H * .6, bx + (r.l + sw) * W, by - r.h * H); g.stroke();
     }
-    g.save(); g.globalCompositeOperation = "lighter";
-    for (const f of flies) {
-      const a = .5 + .5 * Math.sin(t * 2 * f.sp + f.ph); if (a < .2) continue;
-      const x = (f.x + Math.sin(t * .2 * f.sp + f.ph) * .03) * W, y = (f.y + Math.cos(t * .25 + f.ph) * .02) * H;
-      const gl = g.createRadialGradient(x, y, 0, x, y, 9); gl.addColorStop(0, `rgba(255,214,120,${a * .8})`); gl.addColorStop(1, "rgba(255,236,150,0)");
-      g.fillStyle = gl; g.fillRect(x - 9, y - 9, 18, 18);
+    if (L.flies[0] > .02) {
+      g.save(); g.globalCompositeOperation = "lighter";
+      for (const f of flies) {
+        const a = (.5 + .5 * Math.sin(t * 2 * f.sp + f.ph)) * L.flies[0]; if (a < .1) continue;
+        const x = (f.x + Math.sin(t * .2 * f.sp + f.ph) * .03) * W, y = (f.y + Math.cos(t * .25 + f.ph) * .02) * H;
+        const gl = g.createRadialGradient(x, y, 0, x, y, 9); gl.addColorStop(0, `rgba(255,214,120,${a * .8})`); gl.addColorStop(1, "rgba(255,236,150,0)");
+        g.fillStyle = gl; g.fillRect(x - 9, y - 9, 18, 18);
+      }
+      g.restore();
     }
-    g.restore();
+    // petals, leaves or snow drifting across the view
+    const tt = reduce ? 0 : t;
+    for (const kind of ["petal", "leaf", "snow"]) {
+      const w = C.parts[kind]; if (w < .02) continue;
+      for (const p of sky2) {
+        const X = ((p.x + Math.sin(tt * .3 + p.ph) * .03 + tt * .01 * p.v) % 1) * W, Y = ((p.y + tt * FALL[kind] * .12 * p.v) % 1) * H;
+        airDot(kind, X, Y, 90 * p.s, p, tt, w);
+      }
+    }
+    g.globalAlpha = 1;
   }
 
   /* ----- copy and scroll ----- */
@@ -572,10 +712,17 @@ document.documentElement.classList.add("js");
   const progress = () => clamp(-track.getBoundingClientRect().top / (track.offsetHeight - innerHeight));
   const showEl = (el, a) => { el.style.opacity = a; el.style.visibility = a > 0 ? "visible" : "hidden"; };
 
+  let lastP = -1, still = 0, odd = false, slow = 0, slowN = 0, lastT = 0;
   function frame(now) {
-    const t = now / 1000;
+    const t = now / 1000, dt = Math.min(.1, lastT ? t - lastT : .016); lastT = t;
     let p = progress();
     if (reduce) p = p > .4 ? 1 : 0;
+    // when nothing is moving, draw every other frame (the sway still looks smooth)
+    still = Math.abs(p - lastP) < 1e-5 && !settling && Math.abs(mx - sx) < .002 ? still + dt : 0; lastP = p;
+    odd = !odd; if (still > 1.2 && odd) return;
+    if (settling) settling = ease2(C, target, reduce ? 1 : 1 - Math.exp(-dt * 2.6)) > .3;
+
+    const t0 = performance.now();
     camZ = WALK_END * smooth(span(p, .04, .84));
     sx += (mx - sx) * .05;
     const out = 1 - span(camZ, 2, 8);
@@ -596,6 +743,10 @@ document.documentElement.classList.add("js");
     showEl(cap2, span(camZ, 37, 39) * (1 - span(camZ, 43, 45)));
     showEl(outro, span(p, .91, .97));
     nav.classList.toggle("dark", inside > .4 && !atLake);
+
+    // slow device? step the resolution down a little (never back up mid-visit, so it doesn't flicker)
+    slow += performance.now() - t0; slowN++;
+    if (slowN >= 45) { if (slow / slowN > 14 && dpr > 1) { dpr = Math.max(1, dpr - .25); applySize(); } slow = 0; slowN = 0; }
   }
 
   let visible = true, raf = 0;
@@ -607,16 +758,29 @@ document.documentElement.classList.add("js");
   }).observe(track);
   raf = requestAnimationFrame(loop);
 
+  /* ----- season switcher (hero buttons and the season cards) ----- */
+  const seasonBtns = document.querySelectorAll("[data-season]");
+  function setSeason(name, fromCard) {
+    if (!NAMES.includes(name)) return;
+    season = name; target = SEASONS[name]; settling = 1;
+    try { localStorage.setItem("holloway-season", name); } catch (e) {}
+    seasonBtns.forEach(b => b.setAttribute("aria-pressed", b.dataset.season === name));
+    const u = new URL(location.href); u.searchParams.set("season", name); history.replaceState(null, "", u);
+    if (fromCard) glideTo(0, clamp(scrollY / innerHeight * 380, 700, 2600));
+  }
+  seasonBtns.forEach(b => b.addEventListener("click", () => setSeason(b.dataset.season, b.classList.contains("season-card"))));
+  seasonBtns.forEach(b => b.setAttribute("aria-pressed", b.dataset.season === season));
+
   /* ----- "Start walking" or a click on the trees: walk the whole lane ----- */
   let glide = 0;
-  const glideTo = (end, dur) => {
+  function glideTo(end, dur) {
     const start = scrollY;
     cancelAnimationFrame(glide);
     if (reduce || Math.abs(end - start) < 2) { scrollTo({ top: end, behavior: "instant" }); return; }
     const t0 = performance.now();
     const step = now => { const k = clamp((now - t0) / dur); scrollTo({ top: lerp(start, end, ease(k)), behavior: "instant" }); if (k < 1) glide = requestAnimationFrame(step); };
     glide = requestAnimationFrame(step);
-  };
+  }
   const walk = () => glideTo(track.offsetTop + track.offsetHeight - innerHeight, 6000);
   // nav and footer links glide too, so passing the hero plays the walk instead of jumping
   document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener("click", e => {
