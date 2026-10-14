@@ -39,10 +39,12 @@ a{color:inherit}
 .nav.dark{color:var(--d-fg)}
 .nav.solid{background:rgba(245,240,228,.95);border-color:var(--line);color:var(--ink);backdrop-filter:blur(8px)}
 .nav-in{height:52px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.mark{font-size:13px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
+.mark{font-size:13px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;text-decoration:none;white-space:nowrap;transition:opacity .25s,letter-spacing .4s cubic-bezier(.2,.7,.2,1)}
+.mark:hover{opacity:.75;letter-spacing:.36em}
 .links{display:flex;gap:22px}
 .links a{font-size:11px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;text-decoration:none;white-space:nowrap;
-  padding:12px 0;background:linear-gradient(var(--gold),var(--gold)) 0 calc(100% - 8px)/0 1px no-repeat;transition:background-size .25s}
+  padding:12px 0;background:linear-gradient(var(--gold),var(--gold)) 0 calc(100% - 8px)/0 1px no-repeat;transition:background-size .35s cubic-bezier(.2,.7,.2,1),opacity .25s}
+.links a:active{opacity:.6}
 .links a:hover,.links a:focus-visible{background-size:100% 1px}
 @media (max-width:420px){.links{gap:14px}.links a{letter-spacing:.14em}.mark{letter-spacing:.24em}}
 
@@ -56,16 +58,30 @@ a{color:inherit}
 .copy h1,.copy h2{margin:10px 0 8px;font-size:clamp(44px,7.4vw,92px);line-height:.98;font-weight:800;letter-spacing:-.03em}
 .copy h2{font-size:clamp(36px,5.6vw,68px)}
 .copy p{margin:0 0 22px;max-width:36ch;color:#3e4635}
-.go{display:inline-flex;align-items:stretch;border:1px solid var(--ink);color:var(--ink);background:#f5f0e466;font:600 15px/1 var(--font);cursor:pointer;padding:0;border-radius:2px}
+.go{display:inline-flex;align-items:stretch;border:1px solid var(--ink);color:var(--ink);background:#f5f0e466;font:600 15px/1 var(--font);cursor:pointer;padding:0;border-radius:2px;
+  transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s,background-color .35s;-webkit-tap-highlight-color:transparent}
 .go span{padding:14px 18px}
-.go b{display:grid;place-items:center;padding:0 16px;border-left:1px solid var(--ink);font-weight:600}
-.go:hover b,.go:focus-visible b{background:var(--ink);color:var(--ivory)}
+.go b{display:grid;place-items:center;padding:0 16px;border-left:1px solid var(--ink);font-weight:600;overflow:hidden;
+  background:linear-gradient(var(--ink),var(--ink)) 0 0/0 100% no-repeat;transition:background-size .4s cubic-bezier(.2,.7,.2,1),color .3s}
+.go b i{font-style:normal;display:block}
+.go:hover,.go:focus-visible{transform:translateY(-2px);box-shadow:0 10px 26px -14px #1f2a20aa;background-color:#f5f0e4cc}
+.go:hover b,.go:focus-visible b{background-size:100% 100%;color:var(--ivory)}
+.go:hover b i,.go:focus-visible b i{animation:drop .9s cubic-bezier(.5,0,.2,1) infinite}
+.go:active{transform:translateY(0) scale(.97);box-shadow:0 4px 12px -8px #1f2a20aa;transition-duration:.1s}
+.go:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+@keyframes drop{0%{transform:none;opacity:1}45%{transform:translateY(16px);opacity:0}46%{transform:translateY(-16px);opacity:0}100%{transform:none;opacity:1}}
+/* hero copy settles in on load */
+.copy#intro>*{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+.copy#intro>:nth-child(2){animation-delay:.08s}.copy#intro>:nth-child(3){animation-delay:.16s}.copy#intro>:nth-child(4){animation-delay:.26s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
 #outro{opacity:0;visibility:hidden}
 .cap{position:absolute;z-index:2;left:0;right:0;bottom:calc(14% + env(safe-area-inset-bottom));text-align:center;color:#f3ead2;
   font-size:clamp(18px,2.2vw,24px);font-weight:500;letter-spacing:.01em;opacity:0;text-shadow:0 2px 18px #0b120c;padding:0 24px}
 .hint{position:absolute;z-index:2;right:20px;bottom:calc(28px + env(safe-area-inset-bottom));color:#f5f0e4;font-size:11px;letter-spacing:.28em;text-transform:uppercase;
   writing-mode:vertical-rl;text-shadow:0 1px 10px #1e2a20}
 @media (max-width:600px){.hint{writing-mode:horizontal-tb;right:auto;left:20px}}
+.hint{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{50%{translate:0 5px}}
 
 /* ============ content ============ */
 section{scroll-margin-top:52px}
@@ -91,9 +107,21 @@ section{scroll-margin-top:52px}
 .tlink{display:inline-flex;gap:8px;margin-top:28px;font-weight:600;text-decoration:none;
   background:linear-gradient(var(--gold-deep),var(--gold-deep)) 0 100%/100% 1px no-repeat;padding-bottom:2px}
 .tlink:hover{color:var(--gold-deep)}
+.tlink,.back{transition:color .3s}
+.tlink span,.back span{display:inline-block;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.tlink:hover span,.tlink:focus-visible span{transform:translateX(5px)}
+.tlink:hover,.tlink:focus-visible,.back:hover,.back:focus-visible{animation:redraw .7s cubic-bezier(.6,0,.2,1)}
+.back{text-decoration:none;padding-bottom:2px;background:linear-gradient(var(--gold),var(--gold)) 0 100%/100% 1px no-repeat}
+.back:hover{color:var(--d-fg)}
+.back:hover span,.back:focus-visible span{transform:translateY(-4px)}
+.tlink:active,.back:active{opacity:.7}
+@keyframes redraw{0%{background-size:100% 1px;background-position:100% 100%}48%{background-size:0 1px;background-position:100% 100%}52%{background-size:0 1px;background-position:0 100%}100%{background-size:100% 1px;background-position:0 100%}}
 footer{background:var(--forest);color:var(--d-muted);font-size:14px;padding:32px 0 calc(32px + env(safe-area-inset-bottom))}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
-@media (prefers-reduced-motion:reduce){.track{height:calc(var(--sh,1vh) * 200)}}
+@media (prefers-reduced-motion:reduce){
+  .track{height:calc(var(--sh,1vh) * 200)}
+  *,*::before,*::after{animation:none!important;transition-duration:.01s!important}
+}
 </style>
 <script>
 document.documentElement.classList.add("js");
@@ -123,7 +151,7 @@ document.documentElement.classList.add("js");
         <div class="label">A walk through the green</div>
         <h1>Holloway</h1>
         <p>An old sunken lane under the trees, through the meadow and out to the water.</p>
-        <button class="go" id="go" type="button"><span>Start walking</span><b aria-hidden="true">↓</b></button>
+        <button class="go" id="go" type="button"><span>Start walking</span><b aria-hidden="true"><i>↓</i></b></button>
       </div>
       <div class="hint" id="hint" aria-hidden="true">Scroll to walk</div>
 
@@ -186,7 +214,7 @@ document.documentElement.classList.add("js");
 </main>
 
 <footer>
-  <div class="wrap"><span>Holloway is a design concept, not a real trail.</span><a href="#top">Back to the meadow ↑</a></div>
+  <div class="wrap"><span>Holloway is a design concept, not a real trail.</span><a class="back" href="#top">Back to the meadow <span aria-hidden="true">↑</span></a></div>
 </footer>
 
 <script>
@@ -581,14 +609,23 @@ document.documentElement.classList.add("js");
 
   /* ----- "Start walking" or a click on the trees: walk the whole lane ----- */
   let glide = 0;
-  const walk = () => {
-    const start = scrollY, end = track.offsetTop + track.offsetHeight - innerHeight;
-    if (reduce) { scrollTo(0, end); return; }
-    const dur = 6000, t0 = performance.now();
+  const glideTo = (end, dur) => {
+    const start = scrollY;
     cancelAnimationFrame(glide);
-    const step = now => { const k = clamp((now - t0) / dur); scrollTo(0, lerp(start, end, ease(k))); if (k < 1) glide = requestAnimationFrame(step); };
+    if (reduce || Math.abs(end - start) < 2) { scrollTo({ top: end, behavior: "instant" }); return; }
+    const t0 = performance.now();
+    const step = now => { const k = clamp((now - t0) / dur); scrollTo({ top: lerp(start, end, ease(k)), behavior: "instant" }); if (k < 1) glide = requestAnimationFrame(step); };
     glide = requestAnimationFrame(step);
   };
+  const walk = () => glideTo(track.offsetTop + track.offsetHeight - innerHeight, 6000);
+  // nav and footer links glide too, so passing the hero plays the walk instead of jumping
+  document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener("click", e => {
+    const id = a.getAttribute("href").slice(1); if (!id) return;
+    const el = document.getElementById(id); if (!el) return;
+    e.preventDefault();
+    const y = id === "top" ? 0 : el.getBoundingClientRect().top + scrollY - 52;
+    glideTo(y, clamp(Math.abs(y - scrollY) / innerHeight * 380, 700, 2600));
+  }));
   ["wheel", "touchstart", "keydown"].forEach(ev => addEventListener(ev, () => cancelAnimationFrame(glide), { passive: true }));
   $("go").addEventListener("click", walk);
   const onTunnel = e => {                                      // the tunnel mouth on screen, at the start
