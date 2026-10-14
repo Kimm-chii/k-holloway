@@ -210,7 +210,7 @@ document.documentElement.classList.add("js");
   const mix = (c, d, t) => `rgb(${lerp(c[0], d[0], t) | 0},${lerp(c[1], d[1], t) | 0},${lerp(c[2], d[2], t) | 0})`;
 
   /* ----- build the world once, sorted into 1 m depth slices ----- */
-  const slices = Array.from({ length: DEPTH }, () => ({ blades: {}, leaves: {}, trunks: [], flowers: [], bands: [] }));
+  const slices = Array.from({ length: DEPTH }, () => ({ blades: {}, leaves: {}, trunks: [], flowers: [], bands: [], stalks: [] }));
   const put = (z, kind, key, item) => {
     const s = slices[Math.min(DEPTH - 1, Math.max(0, Math.floor(z)))];
     if (key == null) s[kind].push(item); else (s[kind][key] ||= []).push(item);
@@ -251,11 +251,22 @@ document.documentElement.classList.add("js");
   }
   put(57, "bands", null, { x0: -90, x1: -4.5, y: 4, z: 57 }); put(57, "bands", null, { x0: 4.5, x1: 90, y: 4, z: 57 });
 
+  // tall seed stalks close to the path, they catch the light
+  for (let i = 0; i < 70; i++) {
+    const z = R(.9, 16), side = rnd() < .5 ? -1 : 1, x = side * R(1.25, 6);
+    if (inTunnel(z)) continue;
+    put(z, "stalks", null, { x, z, h: R(.8, 1.25), l: R(-.12, .12), ph: R(0, 6.28) });
+  }
+  const clouds = Array.from({ length: 7 }, () => ({ x: R(-.2, 1.2), y: R(.06, .34), w: R(.14, .3), v: R(.004, .01),
+    puffs: Array.from({ length: 5 }, () => [R(-.5, .5), R(-.2, .15), R(.25, .5)]) }));
+  const rays = Array.from({ length: 26 }, () => ({ a: -Math.PI / 2 + R(-1.5, 1.5), w: R(.01, .06), len: R(.3, .6), o: R(.02, .045), ph: R(0, 6.28) }));
+  const birds = Array.from({ length: 5 }, (_, i) => ({ x: R(0, 1), y: R(.12, .3), v: R(.012, .022), f: R(5, 7), s: R(5, 9), ph: i }));
+
   // far hills, as screen-space ridges (0 to 1 across the width)
   const ridge = (n, amp, f) => Array.from({ length: n + 1 }, (_, i) => {
     const t = i / n; return [t, amp * (Math.sin(t * f + 1.3) * .5 + Math.sin(t * f * 2.3 + .4) * .3 + Math.sin(t * f * 5.1) * .12)];
   });
-  const hillsFar = ridge(80, .05, 6), hillsNear = ridge(80, .035, 9);
+  const hillsFar = ridge(80, .05, 6), hillsNear = ridge(80, .035, 9), hillsMid = ridge(80, .04, 4);
 
   // floating seeds outside, dust in the tunnel, fireflies at the water
   const seeds = Array.from({ length: 60 }, () => ({ x: R(-6, 6), y: R(.4, 3.2), z: R(1, 22), v: R(.2, .5), ph: R(0, 6.28) }));
@@ -281,23 +292,54 @@ document.documentElement.classList.add("js");
   /* ----- drawing ----- */
   const g = cx2;
   let camZ = 0, camX = 0, camY = EYE;
+  const sunPos = () => { const k = 1 + camZ / 140; return [CX + W * .16 * k - camX * 4, HY - H * .125 * k]; };
 
   function sky(t) {
     const s = g.createLinearGradient(0, 0, 0, HY);
     s.addColorStop(0, "#a9c6d3"); s.addColorStop(.55, "#ecdcbc"); s.addColorStop(1, "#f6d29a");
     g.fillStyle = s; g.fillRect(0, 0, W, HY + 2);
-    const sy = HY - H * .05, sr = H * .5;
-    const glow = g.createRadialGradient(CX, sy, 0, CX, sy, sr);
+    const [sunX, sunY] = sunPos(), sr = H * .55;
+    const glow = g.createRadialGradient(sunX, sunY, 0, sunX, sunY, sr);
     glow.addColorStop(0, "#fff6dc"); glow.addColorStop(.12, "#ffe9b4cc"); glow.addColorStop(1, "#ffe9b400");
     g.fillStyle = glow; g.fillRect(0, 0, W, H);
-    // distant hills drift a little as you walk
+    // the low sun itself, half hidden by the far ridge
     const k = 1 + camZ / 140;
+    g.fillStyle = "#fff5dc"; g.beginPath(); g.arc(sunX, sunY, H * .042, 0, 6.2832); g.fill();
+    g.save(); g.globalCompositeOperation = "lighter";              // soft beams fanning out behind the trees
+    for (const r of rays) {
+      const a = r.a + Math.sin(t * .04 + r.ph) * .04, L = Math.hypot(W, H) * r.len, w = r.w;
+      const rg = g.createRadialGradient(sunX, sunY, H * .03, sunX, sunY, L);
+      rg.addColorStop(0, `rgba(255,236,190,${r.o})`); rg.addColorStop(1, "rgba(255,236,190,0)");
+      g.fillStyle = rg; g.beginPath(); g.moveTo(sunX, sunY);
+      g.lineTo(sunX + Math.cos(a - w) * L, sunY + Math.sin(a - w) * L); g.lineTo(sunX + Math.cos(a + w) * L, sunY + Math.sin(a + w) * L); g.fill();
+    }
+    g.restore();
+    // slow clouds, lit from below
+    for (const c of clouds) {
+      const x = ((c.x + (reduce ? 0 : t * c.v)) % 1.4 - .2) * W, y = c.y * H, w = c.w * W;
+      for (const [px, py, pr] of c.puffs) {
+        const cg = g.createRadialGradient(x + px * w, y + py * w * .5, 0, x + px * w, y + py * w * .5, pr * w);
+        cg.addColorStop(0, "rgba(255,246,228,.42)"); cg.addColorStop(.6, "rgba(255,226,196,.16)"); cg.addColorStop(1, "rgba(255,226,196,0)");
+        g.fillStyle = cg; g.beginPath(); g.ellipse(x + px * w, y + py * w * .5, pr * w, pr * w * .38, 0, 0, 6.2832); g.fill();
+      }
+    }
+    // distant hills drift a little as you walk
     const hills = (pts, base, col) => {
       g.beginPath(); g.moveTo(-10, H);
       pts.forEach(([u, a]) => g.lineTo(CX + (u * W - CX) * k - camX * 4, HY - (base + a) * H * k));
       g.lineTo(W + 10, H); g.fillStyle = col; g.fill();
     };
-    hills(hillsFar, .06, "#b9bfa2"); hills(hillsNear, .03, "#98a67e");
+    hills(hillsMid, .085, "#cdc7ad"); hills(hillsFar, .06, "#b4b99c"); hills(hillsNear, .03, "#93a278");
+    // a few birds heading home
+    g.strokeStyle = "rgba(52,50,40,.65)"; g.lineCap = "round"; g.lineWidth = 1.4;
+    if (W >= 700) for (const b of birds) {                       // they stay on the right, clear of the headline
+      const u = .5 + (b.x + (reduce ? 0 : t * b.v)) % .62;
+      g.globalAlpha = clamp((u - .5) / .06);
+      const x = u * W, y = b.y * H + Math.sin(t * .5 + b.ph) * 6, flap = reduce ? .4 : Math.sin(t * b.f + b.ph) * .7;
+      g.beginPath(); g.moveTo(x - b.s, y - flap * b.s * .6); g.quadraticCurveTo(x - b.s * .4, y - b.s * .3, x, y);
+      g.quadraticCurveTo(x + b.s * .4, y - b.s * .3, x + b.s, y - flap * b.s * .6); g.stroke();
+    }
+    g.globalAlpha = 1;
   }
 
   function ground() {
@@ -313,7 +355,7 @@ document.documentElement.classList.add("js");
       g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.lineTo(...c); g.lineTo(...d); g.closePath(); g.fillStyle = col; g.fill();
     };
     lane(-3.2, 3.2, ARCH_START - 2, ARCH_END + 2, "#3a4a26");
-    lane(-1.05, 1.05, 0, ARCH_START - 1, "#c9b083");
+    lane(-1.05, 1.05, 0, ARCH_START - 1, "#bfa477"); lane(-.55, .55, 0, ARCH_START - 1, "#cbb185");
     lane(-1, 1, ARCH_START - 1.5, ARCH_END + 1.5, "#7d6a46");
     lane(-1, 1, ARCH_END + 1, 62, "#d8bf8c");
   }
@@ -341,21 +383,37 @@ document.documentElement.classList.add("js");
         g.fillStyle = mix([44, 34, 24], HAZE, hz * .6);
         g.beginPath(); g.moveTo(bx - w, by); g.lineTo(tx - w * .55, ty); g.lineTo(tx + w * .55, ty); g.lineTo(bx + w, by); g.fill();
       }
-      // leaves
+      // leaves: a shaded clump, then its lit side facing the sun
+      const [sunX, sunY] = sunPos();
       for (const key in s.leaves) {
-        g.fillStyle = mix(LEAF[key], HAZE, hz);
-        g.beginPath();
+        const base = LEAF[key], lit = [base[0] + 30, base[1] + 30, base[2] + 10];
+        const vis = [];
         for (const lf of s.leaves[key]) {
           const d = lf.z - camZ; if (d < .2) continue;
           const sc = F / d, x = CX + (lf.x - camX) * sc, y = HY + (camY - lf.y) * sc, r = lf.r * sc;
           if (x + r < 0 || x - r > W || y + r < 0 || y - r > H) continue;
-          g.moveTo(x + r, y); g.arc(x, y, r, 0, 6.2832);
+          vis.push(x, y, r);
+        }
+        if (!vis.length) continue;
+        g.fillStyle = mix(base, HAZE, hz); g.beginPath();
+        for (let j = 0; j < vis.length; j += 3) { g.moveTo(vis[j] + vis[j + 2], vis[j + 1]); g.arc(vis[j], vis[j + 1], vis[j + 2], 0, 6.2832); }
+        g.fill();
+        g.fillStyle = mix(lit, HAZE, hz * .8); g.beginPath();
+        for (let j = 0; j < vis.length; j += 3) {
+          const x = vis[j], y = vis[j + 1], r = vis[j + 2], dx = sunX - x, dy = sunY - y, n = Math.hypot(dx, dy) || 1;
+          const hx = x + dx / n * r * .22, hy = y + dy / n * r * .22 - r * .1, hr = r * .8;
+          g.moveTo(hx + hr, hy); g.arc(hx, hy, hr, 0, 6.2832);
         }
         g.fill();
       }
       // grass
+      const ssc = F / Math.max(.2, dzMid), gy0 = HY + camY * ssc, gy1 = HY + (camY - .8) * ssc;
       for (const key in s.blades) {
-        g.fillStyle = mix(GRASS[key], HAZE, hz);
+        const gg = g.createLinearGradient(0, gy0, 0, gy1), c = GRASS[key];
+        gg.addColorStop(0, mix([c[0] * .55, c[1] * .62, c[2] * .5], HAZE, hz));
+        gg.addColorStop(.55, mix(c, HAZE, hz));
+        gg.addColorStop(1, mix([c[0] + 90, c[1] + 70, c[2] + 40], HAZE, hz));
+        g.fillStyle = gg;
         g.beginPath();
         for (const b of s.blades[key]) {
           const d = b.z - camZ; if (d < .2) continue;
@@ -367,6 +425,16 @@ document.documentElement.classList.add("js");
           g.moveTo(bx - w, by); g.quadraticCurveTo(mxp - w * .5, myp, tx, ty); g.quadraticCurveTo(mxp + w * .5, myp, bx + w, by);
         }
         g.fill();
+      }
+      // seed stalks: thin stem, a glowing head
+      for (const st of s.stalks) {
+        const d = st.z - camZ; if (d < .2) continue;
+        const sc = F / d, sw = wind * Math.sin(t * 1.3 + st.ph) * .06 * st.h;
+        const bx = CX + (st.x - camX) * sc, by = HY + camY * sc, tx = CX + (st.x + st.l + sw - camX) * sc, ty = HY + (camY - st.h) * sc;
+        g.strokeStyle = mix([96, 98, 52], HAZE, hz); g.lineWidth = Math.max(.8, .012 * sc);
+        g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(bx, lerp(by, ty, .6), tx, ty); g.stroke();
+        g.fillStyle = mix([226, 190, 112], HAZE, hz);
+        g.beginPath(); g.ellipse(tx, ty + .05 * sc, Math.max(1, .022 * sc), Math.max(2, .09 * sc), (st.l + sw) * 1.2, 0, 6.2832); g.fill();
       }
       // flowers on top of their blades
       for (const fl of s.flowers) {
@@ -396,6 +464,19 @@ document.documentElement.classList.add("js");
       g.beginPath(); g.arc(CX + (x - camX) * sc, HY + (camY - y) * sc, Math.max(.6, .018 * sc), 0, 6.2832); g.fill();
     }
     g.restore();
+  }
+
+  function grade(t, inside) {
+    const out = 1 - inside; if (out <= 0) return;
+    const [sx0, sy0] = sunPos();
+    g.save(); g.globalCompositeOperation = "soft-light";
+    const warm = g.createRadialGradient(sx0, sy0, 0, sx0, sy0, Math.max(W, H));
+    warm.addColorStop(0, `rgba(255,190,110,${.5 * out})`); warm.addColorStop(1, `rgba(120,70,40,${.35 * out})`);
+    g.fillStyle = warm; g.fillRect(0, 0, W, H);
+    g.restore();
+    const v = g.createRadialGradient(CX, H * .45, Math.min(W, H) * .35, CX, H * .45, Math.max(W, H) * .8);
+    v.addColorStop(0, "rgba(40,30,18,0)"); v.addColorStop(1, `rgba(40,30,18,${.28 * out})`);
+    g.fillStyle = v; g.fillRect(0, 0, W, H);
   }
 
   function tunnelLight(t, inside) {
@@ -478,7 +559,7 @@ document.documentElement.classList.add("js");
 
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (!atLake) {
-      sky(t); ground(); slicesDraw(t); particles(t, inside); tunnelLight(t, inside);
+      sky(t); ground(); slicesDraw(t); grade(t, inside); particles(t, inside); tunnelLight(t, inside);
     } else lake(t, 1 + span(p, .86, 1) * .15);
     if (flash > 0) { g.fillStyle = `rgba(255,246,222,${flash})`; g.fillRect(0, 0, W, H); }
 
